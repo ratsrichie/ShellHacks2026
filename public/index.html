@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GridSync - Stop the GridLock</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  * { box-sizing: border-box; font-family: -apple-system, 'Segoe UI', sans-serif; margin: 0; }
+  body { background: #0b1120; color: #f1f5f9; }
+  header { padding: 22px 20px 14px; text-align: center; background: #131c33; border-bottom: 1px solid #1e2a4a; }
+  header h1 { font-size: 34px; letter-spacing: 2px; font-weight: 900; }
+  header p { opacity: .7; margin-top: 6px; font-size: 15px; }
+  #banner { text-align: center; font-size: 19px; font-weight: 800; padding: 14px 10px; letter-spacing: 1.5px; }
+  #banner.red { background: #7f1d1d; color: #fecaca; border-bottom: 3px solid #ef4444; }
+  #banner.green { background: #14532d; color: #bbf7d0; border-bottom: 3px solid #22c55e; }
+  #main { display: flex; height: calc(100vh - 200px); }
+  #map { flex: 2; min-height: 400px; cursor: crosshair; }
+  #panel { flex: 1; background: #131c33; padding: 20px; overflow-y: auto; min-width: 330px; }
+  .label { font-size: 12px; letter-spacing: 2px; opacity: .55; font-weight: 700; margin: 20px 0 8px; }
+  .overlap-card { background: #160d12; border: 1px solid #7f1d1d; border-left: 4px solid #ef4444; border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
+  .clash-tag { font-size: 13px; font-weight: 800; letter-spacing: 1.5px; color: #fca5a5; margin-bottom: 8px; }
+  .proj { font-size: 14px; margin: 4px 0; }
+  .util { font-size: 11px; opacity: .6; letter-spacing: 1px; margin-left: 6px; font-weight: 700; }
+  .meta { font-size: 13px; opacity: .75; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .save { font-size: 13px; font-weight: 800; color: #4ade80; letter-spacing: .5px; margin-top: 4px; }
+  .stat { background: #0b1120; border: 1px solid #1e2a4a; border-radius: 12px; padding: 14px; margin: 8px 0; text-align: center; }
+  .stat b { font-size: 30px; color: #4ade80; font-variant-numeric: tabular-nums; }
+  .stat span { display: block; font-size: 11px; letter-spacing: 2px; opacity: .55; font-weight: 700; margin-top: 4px; }
+  .legend { display: flex; gap: 14px; justify-content: center; padding: 12px 10px 4px; font-size: 13px; flex-wrap: wrap; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+  button { background: #2563eb; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; margin-top: 10px; width: 100%; font-size: 14px; font-weight: 800; letter-spacing: 1.5px; }
+  button:active { transform: scale(.98); }
+  .sim { background: #0b1120; border: 1px solid #1e2a4a; border-radius: 12px; padding: 14px; margin-top: 8px; }
+  .sim label { font-size: 11px; opacity: .6; display: block; margin-top: 10px; letter-spacing: 1.5px; font-weight: 700; }
+  .sim input, .sim select { width: 100%; padding: 9px; border-radius: 8px; border: 1px solid #334155; background: #131c33; color: white; margin-top: 4px; font-size: 14px; }
+  #pickAlert { border-radius: 10px; padding: 12px 14px; margin-top: 12px; border: 1px solid transparent; display: none; font-size: 14px; line-height: 1.55; }
+  #pickCoords { font-size: 13px; opacity: .6; margin-top: 6px; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚡ GridSync</h1>
+  <p>We catch FPL and Duke building on top of each other.</p>
+  <div class="legend">
+    <span><span class="dot" style="background:#3b82f6"></span>FPL</span>
+    <span><span class="dot" style="background:#f59e0b"></span>Duke Energy</span>
+    <span><span class="dot" style="background:#ef4444"></span>Overlap</span>
+    <span><span class="dot" style="background:#a855f7"></span>Your pick</span>
+  </div>
+</header>
+<div id="banner" class="red">LOADING</div>
+<div id="main">
+  <div id="map"></div>
+  <div id="panel">
+    <div class="stat"><b id="overlapCount">...</b><span>OVERLAPS FLAGGED</span></div>
+    <div class="stat"><b id="savings">...</b><span>POTENTIAL SAVINGS</span></div>
+
+    <div class="label">FLAGGED CLASHES</div>
+    <div id="overlaps">Loading from backend...</div>
+
+    <div class="sim">
+      <div class="label" style="margin-top:0">TEST A BUILD SITE</div>
+      <p style="font-size:13px; opacity:.7">Click the map. We'll tell you if the other utility is already digging there.</p>
+      <label>YOUR UTILITY</label>
+      <select id="pickUtil"><option>FPL</option><option>Duke</option></select>
+      <label>PROJECT NAME</label>
+      <input id="pickName" placeholder="e.g. Doral Feeder Upgrade">
+      <label>START DATE</label>
+      <input id="pickStart" type="date" value="2027-04-01">
+      <label>END DATE</label>
+      <input id="pickEnd" type="date" value="2027-10-01">
+      <div id="pickCoords">Click the map to pick a spot</div>
+      <button onclick="addProject()">CHECK THIS SPOT</button>
+      <div id="pickAlert"></div>
+    </div>
+
+    <button onclick="explain()">EXPLAIN THIS OVERLAP</button>
+    <div id="aiOut" style="margin-top:10px; font-size:14px; opacity:.9; line-height:1.5"></div>
+    <p style="margin-top:20px; font-size:12px; opacity:.5">Demo data modeled on public FPL and Duke Energy Florida filings.</p>
+  </div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map = L.map('map').setView([25.78, -80.30], 10); // Miami-Dade
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+async function load() {
+  const projects = await (await fetch('/api/projects')).json();
+  const { overlaps, totalSavings } = await (await fetch('/api/overlaps')).json();
+
+  const banner = document.getElementById('banner');
+  if (overlaps.length) {
+    banner.className = 'red';
+    banner.innerHTML = `🚨 ${overlaps.length} OVERLAPS DETECTED · $${(totalSavings/1e6).toFixed(1)}M IN SHARED CREW SAVINGS`;
+  } else {
+    banner.className = 'green';
+    banner.innerHTML = `✅ GRID CLEAR · NO OVERLAPS RIGHT NOW`;
+  }
+
+  projects.forEach(p => {
+    const color = p.utility === 'FPL' ? '#3b82f6' : '#f59e0b';
+    L.circleMarker([p.lat, p.lng], { radius: 8, color, fillColor: color, fillOpacity: .8 })
+      .addTo(map).bindPopup(`<b>${p.name}</b><br>${p.utility}<br>${p.start} to ${p.end}<br>$${(p.cost/1e6).toFixed(1)}M`);
+  });
+  overlaps.forEach(o => {
+    L.circle([(o.a.lat+o.b.lat)/2, (o.a.lng+o.b.lng)/2], { radius: 8000, color: '#ef4444', fillColor: '#ef4444', fillOpacity: .25 }).addTo(map);
+  });
+
+  document.getElementById('overlapCount').innerText = overlaps.length;
+  document.getElementById('savings').innerText = '$' + (totalSavings/1e6).toFixed(1) + 'M';
+  const list = document.getElementById('overlaps');
+  list.innerHTML = '';
+  overlaps.forEach((o,i) => {
+    const div = document.createElement('div');
+    div.className = 'overlap-card';
+    div.innerHTML = `<div class="clash-tag">CLASH #${i+1} · ${o.dist} MI APART</div>
+      <div class="proj"><span class="dot" style="background:#3b82f6"></span>${o.a.name}<span class="util">${o.a.utility.toUpperCase()}</span></div>
+      <div class="proj"><span class="dot" style="background:#f59e0b"></span>${o.b.name}<span class="util">${o.b.utility.toUpperCase()}</span></div>
+      <div class="meta">${o.a.start} → ${o.a.end}</div>
+      <div class="save">SAVE ~$${(o.savings/1000).toFixed(0)}K SHARING CREWS</div>`;
+    list.appendChild(div);
+  });
+}
+
+let picked = null, pickMarker = null;
+map.on('click', e => {
+  picked = e.latlng;
+  if (pickMarker) map.removeLayer(pickMarker);
+  pickMarker = L.marker([picked.lat, picked.lng]).addTo(map).bindPopup('Your spot').openPopup();
+  document.getElementById('pickCoords').innerText = picked.lat.toFixed(3) + ', ' + picked.lng.toFixed(3);
+});
+
+async function addProject() {
+  if (!picked) { alert('Click the map first to pick a spot!'); return; }
+  const p = {
+    utility: document.getElementById('pickUtil').value,
+    name: document.getElementById('pickName').value || 'New Project',
+    lat: picked.lat, lng: picked.lng,
+    start: document.getElementById('pickStart').value,
+    end: document.getElementById('pickEnd').value
+  };
+  if (!p.start || !p.end) { alert('Pick start and end dates!'); return; }
+  const { hits, clear } = await (await fetch('/api/check', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p)
+  })).json();
+  const box = document.getElementById('pickAlert');
+  box.style.display = 'block';
+  if (!clear) {
+    box.style.background = '#160d12'; box.style.borderColor = '#ef4444';
+    box.innerHTML = '🚨 <b>CLASH.</b> The other utility is already here:<br>' +
+      hits.map(h => `• ${h.name} (${h.utility}) - ${h.dist} mi away, ${h.start} to ${h.end}`).join('<br>') +
+      '<br><b>Call them up. Share the crew. Save the cash.</b>';
+  } else {
+    box.style.background = '#0d1a12'; box.style.borderColor = '#22c55e';
+    box.innerHTML = '✅ <b>CLEAR.</b> Nobody is building here. You are good to go.';
+  }
+  L.circleMarker([p.lat, p.lng], { radius: 10, color: '#a855f7', fillColor: '#a855f7', fillOpacity: .9 })
+    .addTo(map).bindPopup(`<b>${p.name}</b><br>${p.utility} (yours)`).openPopup();
+}
+
+async function explain() {
+  const d = await (await fetch('/api/explain', { method: 'POST' })).json();
+  document.getElementById('aiOut').innerText = d.text;
+}
+load();
+</script>
+</body>
+</html>
