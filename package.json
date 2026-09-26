@@ -1,0 +1,1 @@
+{"dependencies":{"cors":"^2.8.5","dotenv":"^16.3.1","express":"^4.18.2"},"description":"GridSync backend - beginner kit","main":"server.js","name":"gridsync-backend","scripts":{"start":"node server.js"},"version":"1.0.0"}
