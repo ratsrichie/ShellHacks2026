@@ -25,14 +25,14 @@ const projects = [
   { utility: 'Duke', name: 'Tampa Bay Resilience', lat: 27.9506, lng: -82.4572, start: '2027-04-01', end: '2027-10-01', cost: 4100000 },
   { utility: 'Duke', name: 'Daytona Feeder Expansion', lat: 29.2108, lng: -81.0228, start: '2028-03-01', end: '2028-09-01', cost: 1700000 },
   { utility: 'Duke', name: 'Naples Solar Interconnect', lat: 26.142, lng: -81.7948, start: '2027-07-01', end: '2028-01-01', cost: 3300000 },
-  { utility: 'TECO', name: 'Brandon Substation', lat: 27.94, lng: -82.29, start: '2027-05-01', end: '2027-11-01', cost: 2600000 },
-  { utility: 'TECO', name: 'Ybor Microgrid', lat: 27.96, lng: -82.43, start: '2027-06-01', end: '2027-12-01', cost: 2200000 },
-  { utility: 'TECO', name: 'Westshore Line', lat: 27.95, lng: -82.55, start: '2028-01-01', end: '2028-06-01', cost: 1900000 },
-  { utility: 'OUC', name: 'Orlando East Feeder', lat: 28.50, lng: -81.40, start: '2027-04-01', end: '2027-10-01', cost: 2300000 },
-  { utility: 'OUC', name: 'Kissimmee Solar Tie', lat: 28.29, lng: -81.40, start: '2027-06-01', end: '2027-12-01', cost: 3100000 },
-  { utility: 'OUC', name: 'Sanford Interconnect', lat: 28.81, lng: -81.32, start: '2028-04-01', end: '2028-10-01', cost: 2800000 },
-  { utility: 'JEA', name: 'Arlington Upgrade', lat: 30.35, lng: -81.60, start: '2027-03-01', end: '2027-09-01', cost: 2000000 },
-  { utility: 'JEA', name: 'Orange Park Feeder', lat: 30.16, lng: -81.72, start: '2027-05-15', end: '2027-11-15', cost: 1600000 },
+  { utility: 'Keys Energy', name: 'Key West Substation', lat: 24.5557, lng: -81.7826, start: '2027-03-01', end: '2027-09-01', cost: 1800000 },
+  { utility: 'Keys Energy', name: 'Stock Island Feeder', lat: 24.5638, lng: -81.7357, start: '2027-05-01', end: '2027-11-01', cost: 1400000 },
+  { utility: 'Keys Energy', name: 'Big Coppitt Upgrade', lat: 24.5972, lng: -81.6617, start: '2028-01-01', end: '2028-06-01', cost: 1200000 },
+  { utility: 'Keys Co-op', name: 'Tavernier Line', lat: 25.0097, lng: -80.5128, start: '2027-04-01', end: '2027-10-01', cost: 1600000 },
+  { utility: 'Keys Co-op', name: 'Islamorada Tie', lat: 24.9243, lng: -80.6272, start: '2027-06-01', end: '2027-12-01', cost: 2100000 },
+  { utility: 'Keys Co-op', name: 'Key Largo Feeder', lat: 25.0865, lng: -80.4473, start: '2028-02-01', end: '2028-08-01', cost: 1900000 },
+  { utility: 'Glades Co-op', name: 'Belle Glade Substation', lat: 26.6847, lng: -80.6676, start: '2027-03-15', end: '2027-09-15', cost: 2300000 },
+  { utility: 'Glades Co-op', name: 'Clewiston Interconnect', lat: 26.7560, lng: -80.9344, start: '2027-05-01', end: '2027-11-01', cost: 2000000 },
 ];
 
 
