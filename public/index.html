@@ -40,11 +40,14 @@
 </head>
 <body>
 <header>
-  <h1>⚡Connect 4</h1>
-  <p>We catch FPL and Duke building on top of each other.</p>
+  <h1>⚡ Connect 4</h1>
+  <p>We catch Florida's utilities building on top of each other.</p>
   <div class="legend">
     <span><span class="dot" style="background:#3b82f6"></span>FPL</span>
     <span><span class="dot" style="background:#f59e0b"></span>Duke Energy</span>
+    <span><span class="dot" style="background:#22c55e"></span>Keys Energy</span>
+    <span><span class="dot" style="background:#a855f7"></span>Keys Co-op</span>
+    <span><span class="dot" style="background:#06b6d4"></span>Glades Co-op</span>
     <span><span class="dot" style="background:#ef4444"></span>Overlap</span>
     <span><span class="dot" style="background:#a855f7"></span>Your pick</span>
   </div>
@@ -55,15 +58,13 @@
   <div id="panel">
     <div class="stat"><b id="overlapCount">...</b><span>OVERLAPS FLAGGED</span></div>
     <div class="stat"><b id="savings">...</b><span>POTENTIAL SAVINGS</span></div>
-
     <div class="label">FLAGGED CLASHES</div>
     <div id="overlaps">Loading from backend...</div>
-
     <div class="sim">
       <div class="label" style="margin-top:0">TEST A BUILD SITE</div>
       <p style="font-size:13px; opacity:.7">Click the map. We'll tell you if the other utility is already digging there.</p>
       <label>YOUR UTILITY</label>
-      <select id="pickUtil"><option>FPL</option><option>Duke</option></select>
+      <select id="pickUtil"><option>FPL</option><option>Duke</option><option>Keys Energy</option><option>Keys Co-op</option><option>Glades Co-op</option></select>
       <label>PROJECT NAME</label>
       <input id="pickName" placeholder="e.g. Doral Feeder Upgrade">
       <label>START DATE</label>
@@ -74,21 +75,21 @@
       <button onclick="addProject()">CHECK THIS SPOT</button>
       <div id="pickAlert"></div>
     </div>
-
     <button onclick="explain()">EXPLAIN THIS OVERLAP</button>
     <div id="aiOut" style="margin-top:10px; font-size:14px; opacity:.9; line-height:1.5"></div>
+    <p style="margin-top:20px; font-size:12px; opacity:.5">Simulated project and savings data for demonstration only.</p>
     <p style="margin-top:8px; font-size:12px; opacity:.5">Built by Romario Destine, Richard Toms, Harsh Jha, Shaina Sukhu</p>
   </div>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const map = L.map('map').setView([25.78, -80.30], 10); // Miami-Dade
+const UCOLORS = { FPL: '#3b82f6', Duke: '#f59e0b', 'Keys Energy': '#22c55e', 'Keys Co-op': '#a855f7', 'Glades Co-op': '#06b6d4' };
+const ucolor = u => UCOLORS[u] || '#94a3b8';
+const map = L.map('map').setView([26.1, -80.9], 8); // South Florida
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-
 async function load() {
   const projects = await (await fetch('/api/projects')).json();
   const { overlaps, totalSavings } = await (await fetch('/api/overlaps')).json();
-
   const banner = document.getElementById('banner');
   if (overlaps.length) {
     banner.className = 'red';
@@ -97,16 +98,14 @@ async function load() {
     banner.className = 'green';
     banner.innerHTML = `✅ GRID CLEAR · NO OVERLAPS RIGHT NOW`;
   }
-
   projects.forEach(p => {
-    const color = p.utility === 'FPL' ? '#3b82f6' : '#f59e0b';
+    const color = ucolor(p.utility);
     L.circleMarker([p.lat, p.lng], { radius: 8, color, fillColor: color, fillOpacity: .8 })
       .addTo(map).bindPopup(`<b>${p.name}</b><br>${p.utility}<br>${p.start} to ${p.end}<br>$${(p.cost/1e6).toFixed(1)}M`);
   });
   overlaps.forEach(o => {
     L.circle([(o.a.lat+o.b.lat)/2, (o.a.lng+o.b.lng)/2], { radius: 8000, color: '#ef4444', fillColor: '#ef4444', fillOpacity: .25 }).addTo(map);
   });
-
   document.getElementById('overlapCount').innerText = overlaps.length;
   document.getElementById('savings').innerText = '$' + (totalSavings/1e6).toFixed(1) + 'M';
   const list = document.getElementById('overlaps');
@@ -115,14 +114,13 @@ async function load() {
     const div = document.createElement('div');
     div.className = 'overlap-card';
     div.innerHTML = `<div class="clash-tag">CLASH #${i+1} · ${o.dist} MI APART</div>
-      <div class="proj"><span class="dot" style="background:#3b82f6"></span>${o.a.name}<span class="util">${o.a.utility.toUpperCase()}</span></div>
-      <div class="proj"><span class="dot" style="background:#f59e0b"></span>${o.b.name}<span class="util">${o.b.utility.toUpperCase()}</span></div>
+      <div class="proj"><span class="dot" style="background:${ucolor(o.a.utility)}"></span>${o.a.name}<span class="util">${o.a.utility.toUpperCase()}</span></div>
+      <div class="proj"><span class="dot" style="background:${ucolor(o.b.utility)}"></span>${o.b.name}<span class="util">${o.b.utility.toUpperCase()}</span></div>
       <div class="meta">${o.a.start} → ${o.a.end}</div>
       <div class="save">SAVE ~$${(o.savings/1000).toFixed(0)}K SHARING CREWS</div>`;
     list.appendChild(div);
   });
 }
-
 let picked = null, pickMarker = null;
 map.on('click', e => {
   picked = e.latlng;
@@ -130,7 +128,6 @@ map.on('click', e => {
   pickMarker = L.marker([picked.lat, picked.lng]).addTo(map).bindPopup('Your spot').openPopup();
   document.getElementById('pickCoords').innerText = picked.lat.toFixed(3) + ', ' + picked.lng.toFixed(3);
 });
-
 async function addProject() {
   if (!picked) { alert('Click the map first to pick a spot!'); return; }
   const p = {
@@ -158,7 +155,6 @@ async function addProject() {
   L.circleMarker([p.lat, p.lng], { radius: 10, color: '#a855f7', fillColor: '#a855f7', fillOpacity: .9 })
     .addTo(map).bindPopup(`<b>${p.name}</b><br>${p.utility} (yours)`).openPopup();
 }
-
 async function explain() {
   const d = await (await fetch('/api/explain', { method: 'POST' })).json();
   document.getElementById('aiOut').innerText = d.text;
